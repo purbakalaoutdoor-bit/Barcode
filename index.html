@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Pendaftaran Anggota Lengkap</title>
+  <title>Sistem Pendaftaran Anggota & QR Code Website</title>
 
   <!-- Library QR Code & HTML to Canvas (untuk download gambar) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -51,13 +51,18 @@
 <body>
 
   <div class="container">
-    <h1>Sistem Pendaftaran Anggota</h1>
+    <h1>Sistem Pendaftaran Anggota & QR Code Website</h1>
 
     <div class="main-grid">
       <!-- Form Input -->
       <div class="panel">
         <h2>Formulir Pendaftaran</h2>
         <form id="registrationForm">
+          <div class="form-group">
+            <label for="webUrl">URL / Link Website Tujuan QR Code</label>
+            <input type="url" id="webUrl" value="https://google.com" placeholder="https://website-kamu.com" required>
+            <small style="color: #666; font-size: 0.75rem;">*Link ini yang akan terbuka saat QR Code di-scan HP.</small>
+          </div>
           <div class="form-group">
             <label for="fullName">Nama Lengkap</label>
             <input type="text" id="fullName" placeholder="Masukkan nama lengkap" required>
@@ -72,7 +77,7 @@
           </div>
           <div class="form-group">
             <label for="department">Departemen</label>
-            <input type="text" id="department" placeholder="Contoh: IT, HR, Marketing" required>
+            <input type="text" id="department" placeholder="Contoh: IT, HR, Medic" required>
           </div>
           <button type="submit" class="btn">Daftarkan Anggota</button>
         </form>
@@ -109,6 +114,121 @@
 
     <!-- Tabel Daftar Anggota -->
     <div class="panel">
+      <h2>Daftar Anggota Terdaftar</h2>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>ID Anggota</th>
+              <th>Nama Lengkap</th>
+              <th>Jabatan</th>
+              <th>Departemen</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="memberTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let members = JSON.parse(localStorage.getItem("members")) || [];
+
+    function generateID() {
+      return `ID-${Math.floor(100000 + Math.random() * 900000)}`;
+    }
+
+    // Fungsi Render QR Code yang berisi Link Website
+    function updateQRCode(urlTarget) {
+      const qrContainer = document.getElementById("qrcode");
+      qrContainer.innerHTML = "";
+      new QRCode(qrContainer, {
+        text: urlTarget,
+        width: 120,
+        height: 120,
+        colorDark: "#1e3c72",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+
+    function renderTable() {
+      const tableBody = document.getElementById("memberTableBody");
+      tableBody.innerHTML = "";
+      members.forEach((member, index) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td><strong>${member.id}</strong></td>
+          <td>${member.name}</td>
+          <td>${member.position}</td>
+          <td>${member.dept}</td>
+          <td><button class="btn btn-danger" onclick="deleteMember(${index})">Hapus</button></td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    function saveToLocalStorage() {
+      localStorage.setItem("members", JSON.stringify(members));
+    }
+
+    function deleteMember(index) {
+      members.splice(index, 1);
+      saveToLocalStorage();
+      renderTable();
+    }
+
+    // Inisialisasi awal QR Code (ke link default)
+    updateQRCode("https://google.com");
+    renderTable();
+
+    // Event handler pendaftaran
+    document.getElementById("registrationForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const baseUrl = document.getElementById("webUrl").value.trim();
+      const name = document.getElementById("fullName").value.trim();
+      const position = document.getElementById("position").value;
+      const dept = document.getElementById("department").value.trim();
+      const newID = generateID();
+
+      // Update Tampilan Kartu Identitas
+      document.getElementById("cardName").innerText = name;
+      document.getElementById("cardPosition").innerText = position;
+      document.getElementById("cardDept").innerText = dept;
+      document.getElementById("cardID").innerText = newID;
+
+      // FORMAT LINK / URL WEBSITE UNTUK QR CODE
+      // Menyisipkan parameter ID & nama ke dalam URL agar HP mengenali ini sebagai LINK WEBSITE
+      const fullQrUrl = `${baseUrl}?id=${newID}&nama=${encodeURIComponent(name)}`;
+      
+      // Buat QR Code berdasarkan URL tersebut
+      updateQRCode(fullQrUrl);
+
+      // Simpan data ke browser
+      members.push({ id: newID, name, position, dept, link: fullQrUrl });
+      saveToLocalStorage();
+      renderTable();
+
+      // Reset input nama, jabatan, dept (URL tetap terisi)
+      document.getElementById("fullName").value = "";
+      document.getElementById("department").value = "";
+    });
+
+    // Fitur Download Gambar Kartu ID
+    document.getElementById("downloadBtn").addEventListener("click", function() {
+      const card = document.getElementById("cardToCapture");
+      html2canvas(card).then(canvas => {
+        const link = document.createElement("a");
+        link.download = `ID_Card_${document.getElementById("cardID").innerText}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      });
+    });
+  </script>
+</body>
+</html>
       <h2>Daftar Anggota Terdaftar</h2>
       <div class="table-responsive">
         <table>
