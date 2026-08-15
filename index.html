@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Pendaftaran & Scan Anggota</title>
+  <title>Sistem Pendaftaran QR Code Link</title>
 
-  <!-- Library QR Code, HTML2Canvas & HTML5-QRCode (Scanner Kamera) -->
+  <!-- Library QR Code & HTML to Canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -29,7 +28,6 @@
     .btn { background-color: #1e3c72; color: white; border: none; padding: 10px 16px; font-size: 0.95rem; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.3s; width: 100%; }
     .btn:hover { background-color: #2a5298; }
     .btn-download { background-color: #28a745; margin-top: 15px; }
-    .btn-scan { background-color: #ff9800; margin-bottom: 15px; }
     .btn-danger { background-color: #dc3545; padding: 4px 8px; font-size: 0.8rem; width: auto; }
 
     .id-card-wrapper { display: flex; flex-direction: column; align-items: center; }
@@ -41,24 +39,29 @@
     .info-group { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #e1e8ed; font-size: 0.8rem; }
     .qrcode-container { background-color: #f8f9fa; padding: 16px; border-top: 1px solid #e1e8ed; display: flex; justify-content: center; align-items: center; }
 
-    #reader { width: 100%; border-radius: 8px; overflow: hidden; display: none; margin-bottom: 15px; }
-    .scan-result { background: #e8f4fd; border: 1px solid #b6d4fe; padding: 15px; border-radius: 8px; margin-top: 15px; display: none; }
-    
+    .table-responsive { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
     table th, table td { padding: 10px; border: 1px solid #e1e8ed; text-align: left; }
     table th { background-color: #1e3c72; color: white; }
+    table tr:nth-child(even) { background-color: #f9f9f9; }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h1>Sistem Pendaftaran & Scan Anggota</h1>
+    <h1>Sistem Pendaftaran Anggota</h1>
 
     <div class="main-grid">
-      <!-- Panel Kiri: Form & Scanner -->
+      <!-- Form Input -->
       <div class="panel">
         <h2>Formulir Pendaftaran</h2>
         <form id="registrationForm">
+          <div class="form-group">
+            <label for="domainUrl">Domain / Link Website Kamu</label>
+            <!-- Wajib diawali https:// agar terbaca LINK oleh HP -->
+            <input type="text" id="domainUrl" value="https://google.com" placeholder="https://website-kamu.com" required>
+            <small style="color: #666; font-size: 0.75rem;">*Harus diawali <b>https://</b> agar saat di-scan HP keluar tombol LINK.</small>
+          </div>
           <div class="form-group">
             <label for="fullName">Nama Lengkap</label>
             <input type="text" id="fullName" placeholder="Masukkan nama lengkap" required>
@@ -73,24 +76,13 @@
           </div>
           <div class="form-group">
             <label for="department">Departemen</label>
-            <input type="text" id="department" placeholder="Contoh: IT, HR, Medic" required>
+            <input type="text" id="department" placeholder="Contoh: Paramedic, IT" required>
           </div>
           <button type="submit" class="btn">Daftarkan Anggota</button>
         </form>
-
-        <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-
-        <!-- Fitur Scanner Kamera Web -->
-        <h2>Verifikasi / Scan QR Code</h2>
-        <button class="btn btn-scan" id="toggleScanBtn">Buka Kamera Scanner</button>
-        <div id="reader"></div>
-        <div class="scan-result" id="scanResult">
-          <h4 style="color:#1e3c72; margin-bottom:5px;">Data QR Terdeteksi:</h4>
-          <p id="scanResultText" style="word-break: break-all; font-size:0.9rem;"></p>
-        </div>
       </div>
 
-      <!-- Panel Kanan: Preview ID Card -->
+      <!-- Preview Kartu Identitas Digital -->
       <div class="panel">
         <h2>Kartu Identitas (Preview)</h2>
         <div class="id-card-wrapper">
@@ -99,15 +91,15 @@
               <h3>KARTU ANGGOTA</h3>
             </div>
             <div class="card-body">
-              <div class="user-name" id="cardName">Nama Anggota</div>
-              <div class="user-role" id="cardPosition">Jabatan</div>
+              <div class="user-name" id="cardName">Muhammad Faqih Setyawan</div>
+              <div class="user-role" id="cardPosition">Anggota</div>
               <div class="info-group">
                 <span>ID Anggota:</span>
-                <strong id="cardID">ID-000000</strong>
+                <strong id="cardID">ID-555711</strong>
               </div>
               <div class="info-group">
                 <span>Departemen:</span>
-                <strong id="cardDept">-</strong>
+                <strong id="cardDept">Paramedic</strong>
               </div>
             </div>
             <div class="qrcode-container">
@@ -119,10 +111,10 @@
       </div>
     </div>
 
-    <!-- Tabel Data -->
+    <!-- Tabel Daftar Anggota -->
     <div class="panel">
       <h2>Daftar Anggota Terdaftar</h2>
-      <div style="overflow-x:auto;">
+      <div class="table-responsive">
         <table>
           <thead>
             <tr>
@@ -130,6 +122,7 @@
               <th>Nama Lengkap</th>
               <th>Jabatan</th>
               <th>Departemen</th>
+              <th>Link QR</th>
               <th>Aksi</th>
             </tr>
           </thead>
@@ -141,19 +134,18 @@
 
   <script>
     let members = JSON.parse(localStorage.getItem("members")) || [];
-    let html5QrcodeScanner = null;
 
     function generateID() {
       return `ID-${Math.floor(100000 + Math.random() * 900000)}`;
     }
 
-    function updateQRCode(dataText) {
+    function updateQRCode(urlFormat) {
       const qrContainer = document.getElementById("qrcode");
       qrContainer.innerHTML = "";
       new QRCode(qrContainer, {
-        text: dataText,
-        width: 120,
-        height: 120,
+        text: urlFormat,
+        width: 130,
+        height: 130,
         colorDark: "#1e3c72",
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.H
@@ -170,6 +162,7 @@
           <td>${member.name}</td>
           <td>${member.position}</td>
           <td>${member.dept}</td>
+          <td style="font-size:0.75rem; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${member.link}</td>
           <td><button class="btn btn-danger" onclick="deleteMember(${index})">Hapus</button></td>
         `;
         tableBody.appendChild(row);
@@ -182,28 +175,38 @@
       renderTable();
     }
 
-    updateQRCode("ID-000000");
+    // Load QR Default berformat MURNI URL (misal ke google dulu untuk tes)
+    updateQRCode("https://google.com");
     renderTable();
 
-    // Event Submit Form
     document.getElementById("registrationForm").addEventListener("submit", function (e) {
       e.preventDefault();
 
+      let domain = document.getElementById("domainUrl").value.trim();
       const name = document.getElementById("fullName").value.trim();
       const position = document.getElementById("position").value;
       const dept = document.getElementById("department").value.trim();
       const newID = generateID();
 
+      // Pastikan link diawali https://
+      if (!domain.startsWith("http://") && !domain.startsWith("https://")) {
+        domain = "https://" + domain;
+      }
+
+      // Update Tampilan Card
       document.getElementById("cardName").innerText = name;
       document.getElementById("cardPosition").innerText = position;
       document.getElementById("cardDept").innerText = dept;
       document.getElementById("cardID").innerText = newID;
 
-      // Data yang dimasukkan ke QR Code
-      const qrData = `ID: ${newID} | Nama: ${name} | Jabatan: ${position} | Dept: ${dept}`;
-      updateQRCode(qrData);
+      // FORMAT KHUSUS URL AGAR SCANNER HP MEMBACA SEBAGAI LINK:
+      const linkWebsiteLengkap = `${domain}?id=${newID}`;
 
-      members.push({ id: newID, name, position, dept });
+      // Render QR Code dengan format MURNI LINK
+      updateQRCode(linkWebsiteLengkap);
+
+      // Simpan data
+      members.push({ id: newID, name, position, dept, link: linkWebsiteLengkap });
       localStorage.setItem("members", JSON.stringify(members));
       renderTable();
 
@@ -211,7 +214,6 @@
       document.getElementById("department").value = "";
     });
 
-    // Fitur Download Gambar ID Card
     document.getElementById("downloadBtn").addEventListener("click", function() {
       html2canvas(document.getElementById("cardToCapture")).then(canvas => {
         const link = document.createElement("a");
@@ -219,29 +221,6 @@
         link.href = canvas.toDataURL("image/png");
         link.click();
       });
-    });
-
-    // Fitur Scanner Kamera Web
-    const toggleScanBtn = document.getElementById("toggleScanBtn");
-    const readerDiv = document.getElementById("reader");
-    const scanResultDiv = document.getElementById("scanResult");
-    const scanResultText = document.getElementById("scanResultText");
-
-    toggleScanBtn.addEventListener("click", function() {
-      if (readerDiv.style.display === "none" || readerDiv.style.display === "") {
-        readerDiv.style.display = "block";
-        toggleScanBtn.innerText = "Tutup Kamera";
-
-        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
-        html5QrcodeScanner.render((decodedText) => {
-          scanResultDiv.style.display = "block";
-          scanResultText.innerText = decodedText;
-        });
-      } else {
-        if(html5QrcodeScanner) html5QrcodeScanner.clear();
-        readerDiv.style.display = "none";
-        toggleScanBtn.innerText = "Buka Kamera Scanner";
-      }
     });
   </script>
 </body>
