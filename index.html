@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Pendaftaran QR Code Link</title>
+  <title>Sistem Pendaftaran & Profil Anggota</title>
 
-  <!-- Library QR Code & HTML to Canvas -->
+  <!-- Library QR Code & HTML2Canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -39,16 +39,33 @@
     .info-group { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #e1e8ed; font-size: 0.8rem; }
     .qrcode-container { background-color: #f8f9fa; padding: 16px; border-top: 1px solid #e1e8ed; display: flex; justify-content: center; align-items: center; }
 
-    .table-responsive { overflow-x: auto; }
+    /* Modal / Tampilan Profil dari QR Code */
+    .profile-view { display: none; background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 500px; margin: 40px auto; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+    .profile-badge { display: inline-block; background: #e8f4fd; color: #007bff; padding: 4px 12px; border-radius: 20px; font-weight: bold; margin-bottom: 15px; }
+    
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; }
     table th, table td { padding: 10px; border: 1px solid #e1e8ed; text-align: left; }
     table th { background-color: #1e3c72; color: white; }
-    table tr:nth-child(even) { background-color: #f9f9f9; }
   </style>
 </head>
 <body>
 
-  <div class="container">
+  <!-- JIKA HP MEMBUKA LINK HASIL SCAN QR, TAMPILAN PROFIL INI YANG AKAN MUNCUL -->
+  <div id="profilePage" class="profile-view">
+    <div class="profile-badge">STATUS: ANGGOTA TERVERIFIKASI</div>
+    <h2 id="profName" style="color:#1e3c72; margin-bottom:5px;">-</h2>
+    <p id="profRole" style="color:#666; font-size:0.9rem; margin-bottom:20px;">-</p>
+    
+    <div style="text-align:left; background:#f8f9fa; padding:15px; border-radius:8px;">
+      <div class="info-group"><span>ID Anggota:</span> <strong id="profID">-</strong></div>
+      <div class="info-group"><span>Departemen:</span> <strong id="profDept">-</strong></div>
+    </div>
+    <br>
+    <a href="window.location.pathname" class="btn" style="text-decoration:none; display:inline-block;">Kembali ke Dashboard</a>
+  </div>
+
+  <!-- TAMPILAN DASHBOARD UTAMA (INPUT DATA) -->
+  <div class="container" id="dashboardPage">
     <h1>Sistem Pendaftaran Anggota</h1>
 
     <div class="main-grid">
@@ -56,12 +73,6 @@
       <div class="panel">
         <h2>Formulir Pendaftaran</h2>
         <form id="registrationForm">
-          <div class="form-group">
-            <label for="domainUrl">Domain / Link Website Kamu</label>
-            <!-- Wajib diawali https:// agar terbaca LINK oleh HP -->
-            <input type="text" id="domainUrl" value="https://google.com" placeholder="https://website-kamu.com" required>
-            <small style="color: #666; font-size: 0.75rem;">*Harus diawali <b>https://</b> agar saat di-scan HP keluar tombol LINK.</small>
-          </div>
           <div class="form-group">
             <label for="fullName">Nama Lengkap</label>
             <input type="text" id="fullName" placeholder="Masukkan nama lengkap" required>
@@ -114,7 +125,7 @@
     <!-- Tabel Daftar Anggota -->
     <div class="panel">
       <h2>Daftar Anggota Terdaftar</h2>
-      <div class="table-responsive">
+      <div style="overflow-x:auto;">
         <table>
           <thead>
             <tr>
@@ -122,7 +133,6 @@
               <th>Nama Lengkap</th>
               <th>Jabatan</th>
               <th>Departemen</th>
-              <th>Link QR</th>
               <th>Aksi</th>
             </tr>
           </thead>
@@ -134,6 +144,19 @@
 
   <script>
     let members = JSON.parse(localStorage.getItem("members")) || [];
+
+    // DETEKSI: APABILA QR CODE DI-SCAN DENGAN PARAMETER PROFIL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('view_id')) {
+      // Sembunyikan Dashboard, Tampilkan Halaman Profil Hasil Scan QR
+      document.getElementById("dashboardPage").style.display = "none";
+      document.getElementById("profilePage").style.display = "block";
+      
+      document.getElementById("profID").innerText = urlParams.get('view_id');
+      document.getElementById("profName").innerText = urlParams.get('nama');
+      document.getElementById("profRole").innerText = urlParams.get('jabatan');
+      document.getElementById("profDept").innerText = urlParams.get('dept');
+    }
 
     function generateID() {
       return `ID-${Math.floor(100000 + Math.random() * 900000)}`;
@@ -162,7 +185,6 @@
           <td>${member.name}</td>
           <td>${member.position}</td>
           <td>${member.dept}</td>
-          <td style="font-size:0.75rem; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${member.link}</td>
           <td><button class="btn btn-danger" onclick="deleteMember(${index})">Hapus</button></td>
         `;
         tableBody.appendChild(row);
@@ -175,38 +197,30 @@
       renderTable();
     }
 
-    // Load QR Default berformat MURNI URL (misal ke google dulu untuk tes)
-    updateQRCode("https://google.com");
+    // Ambil Link Website Saat Ini Secara Otomatis
+    const currentWebUrl = window.location.href.split('?')[0];
+    updateQRCode(`${currentWebUrl}?view_id=ID-555711&nama=Muhammad%20Faqih%20Setyawan&jabatan=Anggota&dept=Paramedic`);
     renderTable();
 
     document.getElementById("registrationForm").addEventListener("submit", function (e) {
       e.preventDefault();
 
-      let domain = document.getElementById("domainUrl").value.trim();
       const name = document.getElementById("fullName").value.trim();
       const position = document.getElementById("position").value;
       const dept = document.getElementById("department").value.trim();
       const newID = generateID();
 
-      // Pastikan link diawali https://
-      if (!domain.startsWith("http://") && !domain.startsWith("https://")) {
-        domain = "https://" + domain;
-      }
-
-      // Update Tampilan Card
       document.getElementById("cardName").innerText = name;
       document.getElementById("cardPosition").innerText = position;
       document.getElementById("cardDept").innerText = dept;
       document.getElementById("cardID").innerText = newID;
 
-      // FORMAT KHUSUS URL AGAR SCANNER HP MEMBACA SEBAGAI LINK:
-      const linkWebsiteLengkap = `${domain}?id=${newID}`;
+      // MENYUSUN LINK SECARA OTOMATIS BERDASARKAN ALAMAT WEBSITE SAAT INI
+      const fullQrUrl = `${currentWebUrl}?view_id=${newID}&nama=${encodeURIComponent(name)}&jabatan=${encodeURIComponent(position)}&dept=${encodeURIComponent(dept)}`;
 
-      // Render QR Code dengan format MURNI LINK
-      updateQRCode(linkWebsiteLengkap);
+      updateQRCode(fullQrUrl);
 
-      // Simpan data
-      members.push({ id: newID, name, position, dept, link: linkWebsiteLengkap });
+      members.push({ id: newID, name, position, dept, link: fullQrUrl });
       localStorage.setItem("members", JSON.stringify(members));
       renderTable();
 
