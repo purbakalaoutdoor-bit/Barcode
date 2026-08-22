@@ -104,13 +104,13 @@
 </head>
 <body>
 
-  <!-- HALAMAN VERIFIKASI QR SCANNER -->
+  <!-- HALAMAN VERIFIKASI HASIL SCAN QR CODE -->
   <div id="profilePage" class="profile-view">
     <div class="profile-badge"><i class="fa-solid fa-shield-halved"></i> ANGGOTA TERVERIFIKASI</div>
     <div class="kta-photo-frame" style="margin: 0 auto 15px; width: 130px; height: 160px;">
       <img id="profImg" src="https://via.placeholder.com/150?text=Foto" alt="Foto Profil">
     </div>
-    <h2 id="profName" style="color: var(--cyber-cyan); font-family:'Orbitron', sans-serif; font-size:1.2rem; margin-bottom: 4px;">-</h2>
+    <h2 id="profName" style="color: var(--cyber-cyan); font-family:'Orbitron', sans-serif; font-size:1.2rem; margin-bottom: 4px;">Memuat data...</h2>
     <p id="profID" style="color: var(--gold-yellow); font-family:'Orbitron', sans-serif; font-size: 0.9rem; margin-bottom: 15px;">-</p>
 
     <div style="text-align:left; background:#060f17; padding:15px; border-radius:10px; border:1px solid var(--border-cyan); margin-bottom:20px;">
@@ -277,8 +277,7 @@
 
   <script>
     // ==========================================
-    // INISIALISASI SUPABASE CLIENT
-    // Pastikan Anon Key diambil dari Supabase Dashboard (Project Settings -> API -> anon public)
+    // KREDENSIAL SUPABASE
     // ==========================================
     const SUPABASE_URL = 'https://peddeglhhwtgqoftcgcx.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_KslKm3Zp-M1yr58mw2Xd4Q_hX6VBc9h'; 
@@ -287,24 +286,42 @@
     let currentPhotoBase64 = "https://via.placeholder.com/160x200?text=Foto+Anggota";
     const currentWebUrl = window.location.href.split('?')[0];
 
-    // Cek parameter verifikasi dari QR Code
+    // MENGAMBIL DATA DARI SUPABASE JIKA WEBSITE DIBUKA LEWAT SCAN QR CODE
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('view_id')) {
       document.getElementById("dashboardPage").style.display = "none";
       document.getElementById("profilePage").style.display = "block";
       
-      document.getElementById("profID").innerText = urlParams.get('view_id');
-      document.getElementById("profName").innerText = urlParams.get('nama');
-      document.getElementById("profDept").innerText = urlParams.get('dept');
-      document.getElementById("profPhone").innerText = urlParams.get('phone') || "-";
-      document.getElementById("profEmail").innerText = urlParams.get('email') || "-";
-      if(urlParams.get('img')) document.getElementById("profImg").src = urlParams.get('img');
+      const viewId = urlParams.get('view_id');
+      loadScannedMemberProfile(viewId);
+    }
 
-      if(urlParams.get('phone')) {
-        document.getElementById("btnWA").href = `https://wa.me/${urlParams.get('phone').replace(/[^0-9]/g, '')}`;
-      }
-      if(urlParams.get('email')) {
-        document.getElementById("btnMail").href = `mailto:${urlParams.get('email')}`;
+    async function loadScannedMemberProfile(memberId) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('members')
+          .select('*')
+          .eq('member_id', memberId)
+          .single();
+
+        if (error || !data) throw error;
+
+        document.getElementById("profID").innerText = data.member_id;
+        document.getElementById("profName").innerText = data.name;
+        document.getElementById("profDept").innerText = data.dept;
+        document.getElementById("profPhone").innerText = data.phone || "-";
+        document.getElementById("profEmail").innerText = data.email || "-";
+        if(data.photo) document.getElementById("profImg").src = data.photo;
+
+        if(data.phone) {
+          document.getElementById("btnWA").href = `https://wa.me/${data.phone.replace(/[^0-9]/g, '')}`;
+        }
+        if(data.email) {
+          document.getElementById("btnMail").href = `mailto:${data.email}`;
+        }
+      } catch (err) {
+        document.getElementById("profName").innerText = "Data Tidak Ditemukan";
+        console.error("Gagal mengambil profil terverifikasi:", err);
       }
     }
 
@@ -312,16 +329,17 @@
       document.getElementById("cardInner").classList.toggle("is-flipped");
     }
 
+    // MEMBUAT QR CODE PENDEK & RENGGANG AGAR MUDAH DIBACA KAMERA
     function updateQRCodeBack(url) {
       const container = document.getElementById("qrcodeBack");
       container.innerHTML = "";
       new QRCode(container, {
         text: url,
-        width: 140,
-        height: 140,
+        width: 150,
+        height: 150,
         colorDark: "#000000",
         colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
+        correctLevel: QRCode.CorrectLevel.M // Level M membuat bintik QR code lebih besar dan tidak rapat
       });
     }
 
@@ -358,7 +376,7 @@
       }
     });
 
-    // AMBIL DATA ANGGOTA DARI SUPABASE (DENGAN PENANGANAN ERROR TRY-CATCH)
+    // AMBIL DAFTAR ANGGOTA DARI SUPABASE
     async function loadMembersFromSupabase() {
       const tableBody = document.getElementById("memberTableBody");
       tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--cyber-cyan);"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data dari Supabase...</td></tr>`;
@@ -395,7 +413,7 @@
         });
       } catch (err) {
         console.error("Gagal koneksi Supabase:", err);
-        tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#dc3545; padding:20px;"><i class="fa-solid fa-triangle-exclamation"></i> Gagal terhubung ke Supabase. Pastikan Anon Key sudah diisi dengan benar.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#dc3545; padding:20px;"><i class="fa-solid fa-triangle-exclamation"></i> Gagal terhubung ke Supabase. Pastikan Anon Key diisi dengan benar.</td></tr>`;
       }
     }
 
@@ -405,7 +423,6 @@
       });
     }
 
-    // HAPUS DATA DARI SUPABASE
     async function deleteMemberFromSupabase(dbId) {
       if (confirm("Hapus data anggota ini dari database Supabase?")) {
         try {
@@ -427,12 +444,13 @@
       document.getElementById("cardEmail").innerText = m.email;
       document.getElementById("cardImg").src = m.photo || "https://via.placeholder.com/160x200?text=Foto";
 
-      const fullQrUrl = `${currentWebUrl}?view_id=${encodeURIComponent(m.member_id)}&nama=${encodeURIComponent(m.name)}&dept=${encodeURIComponent(m.dept)}&phone=${encodeURIComponent(m.phone)}&email=${encodeURIComponent(m.email)}`;
-      updateQRCodeBack(fullQrUrl);
+      // URL HANYA BERISI LINK WEBSITE + ID ANGGOTA (SANGAT RINGKAS)
+      const shortQrUrl = `${currentWebUrl}?view_id=${encodeURIComponent(m.member_id)}`;
+      updateQRCodeBack(shortQrUrl);
       updateDirectContactButtons(m.phone, m.email);
     }
 
-    // SIMPAN DATA BARU KE SUPABASE
+    // SIMPAN DATA BARU
     document.getElementById("registrationForm").addEventListener("submit", async function (e) {
       e.preventDefault();
 
@@ -454,8 +472,9 @@
       document.getElementById("cardEmail").innerText = email;
       document.getElementById("cardImg").src = currentPhotoBase64;
 
-      const fullQrUrl = `${currentWebUrl}?view_id=${encodeURIComponent(memberID)}&nama=${encodeURIComponent(name)}&dept=${encodeURIComponent(dept)}&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(email)}`;
-      updateQRCodeBack(fullQrUrl);
+      // HANYA MENGIRIM ID PADA QR CODE
+      const shortQrUrl = `${currentWebUrl}?view_id=${encodeURIComponent(memberID)}`;
+      updateQRCodeBack(shortQrUrl);
       updateDirectContactButtons(phone, email);
 
       try {
@@ -498,7 +517,7 @@
     });
 
     // Inisialisasi data awal
-    updateQRCodeBack(`${currentWebUrl}?view_id=AOC-002&nama=MUHAMMAD%20FAQIH%20SETYAWAN&dept=CO.%20TEKNIS%20INFORMATIKA&phone=%2B6281234567890&email=faqih_aoc002%40abidzar.group`);
+    updateQRCodeBack(`${currentWebUrl}?view_id=AOC-002`);
     loadMembersFromSupabase();
   </script>
 </body>
