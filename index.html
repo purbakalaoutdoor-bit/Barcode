@@ -103,7 +103,7 @@
 </head>
 <body>
 
-  <!-- HALAMAN VERIFIKASI HASIL SCAN QR CODE -->
+  <!-- HALAMAN VERIFIKASI QR CODE -->
   <div id="profilePage" class="profile-view">
     <div class="profile-badge"><i class="fa-solid fa-shield-halved"></i> ANGGOTA TERVERIFIKASI</div>
 
@@ -144,7 +144,7 @@
             </div>
           </div>
 
-          <!-- SISI BELAKANG PROFILE (BARCODE) -->
+          <!-- SISI BELAKANG PROFILE -->
           <div class="kta-card kta-card-back">
             <div class="kta-header">
               <div class="kta-logo"><i class="fa-solid fa-shield-halved"></i></div>
@@ -430,7 +430,6 @@
       }
     }
 
-    // OTO-RESIZE FOTO SAAT UPLOAD (MENCEGAH MEMORY CRASH)
     document.getElementById("photo").addEventListener("change", function(e) {
       const file = e.target.files[0];
       if (file) {
@@ -547,7 +546,7 @@
       loadMembersFromLocalStorage();
     });
 
-    // FUNGSI UNDUH KTA KOMPATIBEL HP & LAPTOP (TANPA EFFECT MIRROR)
+    // UNDUH KTA DIGITAL - FIX EFFECT MIRROR DENGAN ONCLONE TRANSFORM NONE
     document.getElementById("downloadBtn").addEventListener("click", function() {
       const btn = this;
       const originalText = btn.innerHTML;
@@ -563,24 +562,23 @@
         scale: 2,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: null
-      }).then(canvas => {
-        let finalCanvas = canvas;
-
-        // Cermin balik jika sisi belakang agar tulisan/gambar menjadi normal
-        if (isFlipped) {
-          const flipCanvas = document.createElement('canvas');
-          flipCanvas.width = canvas.width;
-          flipCanvas.height = canvas.height;
-          const ctx = flipCanvas.getContext('2d');
-          ctx.translate(canvas.width, 0);
-          ctx.scale(-1, 1);
-          ctx.drawImage(canvas, 0, 0);
-          finalCanvas = flipCanvas;
+        backgroundColor: null,
+        onclone: (clonedDoc) => {
+          // Menetralkan semua CSS Transform 3D (rotateY) pada DOM kloningan
+          // sehingga html2canvas merender teks secara tegak lurus (0 derajat)
+          const clonedTarget = clonedDoc.getElementById(targetId);
+          if (clonedTarget) {
+            clonedTarget.style.transform = "none";
+            clonedTarget.style.webkitTransform = "none";
+          }
+          const clonedInner = clonedDoc.getElementById("cardInner");
+          if (clonedInner) {
+            clonedInner.style.transform = "none";
+            clonedInner.style.webkitTransform = "none";
+          }
         }
-
-        // Konversi ke Blob agar dapat diunduh di semua browser HP
-        finalCanvas.toBlob(function(blob) {
+      }).then(canvas => {
+        canvas.toBlob(function(blob) {
           if (!blob) {
             alert("Gagal membuat berkas gambar!");
             btn.innerHTML = originalText;
