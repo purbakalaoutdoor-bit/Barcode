@@ -277,10 +277,11 @@
 
   <script>
     // ==========================================
-    // INI SIALISASI SUPABASE CLIENT
+    // INISIALISASI SUPABASE CLIENT
+    // Pastikan Anon Key diambil dari Supabase Dashboard (Project Settings -> API -> anon public)
     // ==========================================
     const SUPABASE_URL = 'https://peddeglhhwtgqoftcgcx.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_KslKm3Zp-M1yr58mw2Xd4Q_hX6VBc9h';
+    const SUPABASE_ANON_KEY = 'sb_publishable_KslKm3Zp-M1yr58mw2Xd4Q_hX6VBc9h'; 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let currentPhotoBase64 = "https://via.placeholder.com/160x200?text=Foto+Anggota";
@@ -330,10 +331,18 @@
       if (phone) {
         btnWA.href = `https://wa.me/${phone.replace(/[^0-9]/g, '')}`;
         btnWA.style.opacity = "1";
+        btnWA.style.pointerEvents = "auto";
+      } else {
+        btnWA.style.opacity = "0.5";
+        btnWA.style.pointerEvents = "none";
       }
       if (email) {
         btnMail.href = `mailto:${email}`;
         btnMail.style.opacity = "1";
+        btnMail.style.pointerEvents = "auto";
+      } else {
+        btnMail.style.opacity = "0.5";
+        btnMail.style.pointerEvents = "none";
       }
     }
 
@@ -349,44 +358,45 @@
       }
     });
 
-    // AMBIL DATA ANGGOTA DARI SUPABASE
+    // AMBIL DATA ANGGOTA DARI SUPABASE (DENGAN PENANGANAN ERROR TRY-CATCH)
     async function loadMembersFromSupabase() {
       const tableBody = document.getElementById("memberTableBody");
-      tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--cyber-cyan);">Memuat data dari Supabase...</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--cyber-cyan);"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data dari Supabase...</td></tr>`;
 
-      const { data, error } = await supabaseClient
-        .from('members')
-        .select('*')
-        .order('created_at', { ascending: false });
+      try {
+        const { data, error } = await supabaseClient
+          .from('members')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error("Gagal mengambil data:", error);
-        tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#dc3545; padding:20px;">Gagal memuat data dari database. Silakan periksa kredensial Supabase Anda.</td></tr>`;
-        return;
+        if (error) throw error;
+
+        tableBody.innerHTML = "";
+        if (!data || data.length === 0) {
+          tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#8a9ba8; padding:20px;">Belum ada anggota terdaftar di database Supabase</td></tr>`;
+          return;
+        }
+
+        data.forEach(m => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td><img src="${m.photo || 'https://via.placeholder.com/160x200?text=Foto'}" style="width:36px; height:44px; border-radius:4px; object-fit:cover;"></td>
+            <td><strong style="color:var(--cyber-cyan);">${escapeHtml(m.member_id)}</strong></td>
+            <td>${escapeHtml(m.name)}</td>
+            <td>${escapeHtml(m.dept)}</td>
+            <td>${escapeHtml(m.phone)}</td>
+            <td>${escapeHtml(m.email)}</td>
+            <td>
+              <button class="btn btn-action btn-edit" onclick='previewMember(${JSON.stringify(m)})'>Lihat</button>
+              <button class="btn btn-action btn-danger" onclick="deleteMemberFromSupabase('${m.id}')">Hapus</button>
+            </td>
+          `;
+          tableBody.appendChild(row);
+        });
+      } catch (err) {
+        console.error("Gagal koneksi Supabase:", err);
+        tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#dc3545; padding:20px;"><i class="fa-solid fa-triangle-exclamation"></i> Gagal terhubung ke Supabase. Pastikan Anon Key sudah diisi dengan benar.</td></tr>`;
       }
-
-      tableBody.innerHTML = "";
-      if (!data || data.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#8a9ba8; padding:20px;">Belum ada anggota terdaftar di database Supabase</td></tr>`;
-        return;
-      }
-
-      data.forEach(m => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td><img src="${m.photo || 'https://via.placeholder.com/160x200?text=Foto'}" style="width:36px; height:44px; border-radius:4px; object-fit:cover;"></td>
-          <td><strong style="color:var(--cyber-cyan);">${escapeHtml(m.member_id)}</strong></td>
-          <td>${escapeHtml(m.name)}</td>
-          <td>${escapeHtml(m.dept)}</td>
-          <td>${escapeHtml(m.phone)}</td>
-          <td>${escapeHtml(m.email)}</td>
-          <td>
-            <button class="btn btn-action btn-edit" onclick='previewMember(${JSON.stringify(m)})'>Lihat</button>
-            <button class="btn btn-action btn-danger" onclick="deleteMemberFromSupabase('${m.id}')">Hapus</button>
-          </td>
-        `;
-        tableBody.appendChild(row);
-      });
     }
 
     function escapeHtml(text) {
@@ -398,9 +408,13 @@
     // HAPUS DATA DARI SUPABASE
     async function deleteMemberFromSupabase(dbId) {
       if (confirm("Hapus data anggota ini dari database Supabase?")) {
-        const { error } = await supabaseClient.from('members').delete().eq('id', dbId);
-        if (error) alert("Gagal menghapus: " + error.message);
-        else loadMembersFromSupabase();
+        try {
+          const { error } = await supabaseClient.from('members').delete().eq('id', dbId);
+          if (error) throw error;
+          loadMembersFromSupabase();
+        } catch (err) {
+          alert("Gagal menghapus: " + err.message);
+        }
       }
     }
 
@@ -432,7 +446,6 @@
       const phone = document.getElementById("phone").value.trim();
       const email = document.getElementById("email").value.trim();
 
-      // Inisialisasi tampilan preview
       document.getElementById("cardName").innerText = name;
       document.getElementById("cardID").innerText = memberID;
       document.getElementById("cardIDBack").innerText = memberID;
@@ -445,27 +458,28 @@
       updateQRCodeBack(fullQrUrl);
       updateDirectContactButtons(phone, email);
 
-      // Simpan Payload ke Supabase Table 'members'
-      const { data, error } = await supabaseClient.from('members').insert([
-        {
-          member_id: memberID,
-          name: name,
-          dept: dept,
-          phone: phone,
-          email: email,
-          photo: currentPhotoBase64
-        }
-      ]);
+      try {
+        const { data, error } = await supabaseClient.from('members').insert([
+          {
+            member_id: memberID,
+            name: name,
+            dept: dept,
+            phone: phone,
+            email: email,
+            photo: currentPhotoBase64
+          }
+        ]);
 
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Simpan ke Supabase`;
+        if (error) throw error;
 
-      if (error) {
-        alert("Gagal menyimpan ke Supabase: " + error.message);
-      } else {
         alert("Berhasil disimpan ke Cloud Database Supabase!");
         document.getElementById("registrationForm").reset();
         loadMembersFromSupabase();
+      } catch (err) {
+        alert("Gagal menyimpan ke Supabase: " + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Simpan ke Supabase`;
       }
     });
 
@@ -483,7 +497,7 @@
       });
     });
 
-    // Muat data awal dari database
+    // Inisialisasi data awal
     updateQRCodeBack(`${currentWebUrl}?view_id=AOC-002&nama=MUHAMMAD%20FAQIH%20SETYAWAN&dept=CO.%20TEKNIS%20INFORMATIKA&phone=%2B6281234567890&email=faqih_aoc002%40abidzar.group`);
     loadMembersFromSupabase();
   </script>
