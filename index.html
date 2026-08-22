@@ -99,9 +99,32 @@
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
     table th, table td { padding: 10px; border: 1px solid var(--border-cyan); text-align: left; }
     table th { background-color: #081622; color: var(--cyber-cyan); font-family: 'Orbitron', sans-serif; font-size: 0.75rem; }
+
+    /* WADAH RENDER KHUSUS EKSPOR (2D FLAT OFF-SCREEN) */
+    #exportContainer {
+      position: fixed;
+      left: -9999px;
+      top: -9999px;
+      width: 330px;
+      height: 570px;
+      background: linear-gradient(180deg, #0d1b26 0%, #050b10 100%);
+      border: 3px solid #3ca5cd;
+      border-radius: 20px;
+      padding: 16px;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      box-sizing: border-box;
+      z-index: -999;
+    }
   </style>
 </head>
 <body>
+
+  <!-- WADAH EKSPOR PNG LATAR BELAKANG -->
+  <div id="exportContainer"></div>
 
   <!-- HALAMAN VERIFIKASI QR CODE -->
   <div id="profilePage" class="profile-view">
@@ -340,14 +363,13 @@
   </div>
 
   <script>
-    // PLACEHOLDER LOKAL DATA-URI SVG (100% OFFLINE TANPA INTERNET AGAR RENDER DOWLOAD INSTAN)
+    // DATA-URI SVG PLACEHOLDER UNTUK MENCEGAH TIMEOUT GAMBAR EXTERNAL
     const DEFAULT_PHOTO = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='200' viewBox='0 0 160 200'%3E%3Crect width='100%25' height='100%25' fill='%2308121a'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2352e5ff' font-family='sans-serif' font-size='13'%3EFOTO ANGGOTA%3C/text%3E%3C/svg%3E";
 
     let members = JSON.parse(localStorage.getItem("members_kta")) || [];
     let currentPhotoBase64 = DEFAULT_PHOTO;
     const currentWebUrl = window.location.href.split('?')[0];
 
-    // INISIALISASI FOTO DEFAULTS
     document.getElementById("cardImg").src = DEFAULT_PHOTO;
     document.getElementById("profImg").src = DEFAULT_PHOTO;
 
@@ -437,7 +459,7 @@
       }
     }
 
-    // UPLOAD FOTO DENGAN RENDER CANVAS BASE64 LOKAL (TANPA TIMEOUT)
+    // OTO-RESIZE FOTO SAAT UPLOAD
     document.getElementById("photo").addEventListener("change", function(e) {
       const file = e.target.files[0];
       if (file) {
@@ -559,7 +581,7 @@
       loadMembersFromLocalStorage();
     });
 
-    // PROSES UNDUH KTA DIGITAL INSTAN (BEBAS TIMEOUT & RENDER INSTAN)
+    // FUNGSI UNDUH ULTRACEPAT & FLAT (BEBAS TIMEOUT & BEBAS EFstring CERSIN)
     document.getElementById("downloadBtn").addEventListener("click", function() {
       const btn = this;
       const originalText = btn.innerHTML;
@@ -568,31 +590,23 @@
 
       const isFlipped = document.getElementById("cardInner").classList.contains("is-flipped");
       const targetId = isFlipped ? "cardBackToCapture" : "cardFrontToCapture";
-      const cardElem = document.getElementById(targetId);
+      const sourceCard = document.getElementById(targetId);
+      const exportBox = document.getElementById("exportContainer");
       const sideName = isFlipped ? "BELAKANG_BARCODE" : "DEPAN";
 
-      html2canvas(cardElem, {
+      // Disalin ke wadah datar khusus ekspor
+      exportBox.innerHTML = sourceCard.innerHTML;
+
+      // Rendering langsung pada kontainer 2D datar tanpa dependensi jaringan
+      html2canvas(exportBox, {
         scale: 2,
-        useCORS: false,      // Matikan request CORS eksternal agar proses seratus persen lokal
-        allowTaint: true,   // Mengizinkan Data-URI SVG & Base64 lokal
-        logging: false,
-        onclone: (clonedDoc) => {
-          // Hilangkan CSS Transform 3D agar gambar tidak terbalik saat dirender
-          const clonedTarget = clonedDoc.getElementById(targetId);
-          if (clonedTarget) {
-            clonedTarget.style.transform = "none";
-            clonedTarget.style.webkitTransform = "none";
-          }
-          const clonedInner = clonedDoc.getElementById("cardInner");
-          if (clonedInner) {
-            clonedInner.style.transform = "none";
-            clonedInner.style.webkitTransform = "none";
-          }
-        }
+        useCORS: false,
+        allowTaint: true,
+        logging: false
       }).then(canvas => {
         canvas.toBlob(function(blob) {
           if (!blob) {
-            alert("Gagal membuat gambar PNG!");
+            alert("Gagal membuat berkas PNG!");
             btn.innerHTML = originalText;
             btn.disabled = false;
             return;
@@ -610,13 +624,15 @@
             URL.revokeObjectURL(fileUrl);
             btn.innerHTML = originalText;
             btn.disabled = false;
-          }, 300);
+            exportBox.innerHTML = "";
+          }, 200);
         }, 'image/png');
 
       }).catch(err => {
-        alert("Gagal mengunduh: " + err.message);
+        alert("Terjadi kesalahan: " + err.message);
         btn.innerHTML = originalText;
         btn.disabled = false;
+        exportBox.innerHTML = "";
       });
     });
 
