@@ -123,7 +123,7 @@
             </div>
 
             <div class="kta-photo-frame">
-              <img id="profImg" src="https://via.placeholder.com/160x200?text=Foto" alt="Foto Profil" onerror="this.src='https://via.placeholder.com/160x200?text=Foto';">
+              <img id="profImg" alt="Foto Profil">
             </div>
 
             <div class="kta-name" id="profName">-</div>
@@ -255,7 +255,7 @@
                 </div>
 
                 <div class="kta-photo-frame">
-                  <img id="cardImg" src="https://via.placeholder.com/160x200?text=Foto+Anggota" alt="Foto Anggota" onerror="this.src='https://via.placeholder.com/160x200?text=Foto';">
+                  <img id="cardImg" alt="Foto Anggota">
                 </div>
 
                 <div class="kta-name" id="cardName">MUHAMMAD FAQIH SETYAWAN</div>
@@ -340,9 +340,16 @@
   </div>
 
   <script>
+    // PLACEHOLDER LOKAL DATA-URI SVG (100% OFFLINE TANPA INTERNET AGAR RENDER DOWLOAD INSTAN)
+    const DEFAULT_PHOTO = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='200' viewBox='0 0 160 200'%3E%3Crect width='100%25' height='100%25' fill='%2308121a'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2352e5ff' font-family='sans-serif' font-size='13'%3EFOTO ANGGOTA%3C/text%3E%3C/svg%3E";
+
     let members = JSON.parse(localStorage.getItem("members_kta")) || [];
-    let currentPhotoBase64 = "https://via.placeholder.com/160x200?text=Foto+Anggota";
+    let currentPhotoBase64 = DEFAULT_PHOTO;
     const currentWebUrl = window.location.href.split('?')[0];
+
+    // INISIALISASI FOTO DEFAULTS
+    document.getElementById("cardImg").src = DEFAULT_PHOTO;
+    document.getElementById("profImg").src = DEFAULT_PHOTO;
 
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('view_id')) {
@@ -357,7 +364,7 @@
       const dept = matchedMember ? matchedMember.dept : (urlParams.get('dept') || "-");
       const phone = matchedMember ? matchedMember.phone : (urlParams.get('phone') || "-");
       const email = matchedMember ? matchedMember.email : (urlParams.get('email') || "-");
-      const photo = (matchedMember && matchedMember.photo) ? matchedMember.photo : "https://via.placeholder.com/160x200?text=Foto";
+      const photo = (matchedMember && matchedMember.photo && matchedMember.photo.length > 30) ? matchedMember.photo : DEFAULT_PHOTO;
 
       document.getElementById("profID").innerText = id;
       document.getElementById("profIDBack").innerText = id;
@@ -430,7 +437,7 @@
       }
     }
 
-    // OTO-RESIZE FOTO SAAT UPLOAD
+    // UPLOAD FOTO DENGAN RENDER CANVAS BASE64 LOKAL (TANPA TIMEOUT)
     document.getElementById("photo").addEventListener("change", function(e) {
       const file = e.target.files[0];
       if (file) {
@@ -447,8 +454,8 @@
             document.getElementById("cardImg").src = currentPhotoBase64;
           };
           img.onerror = function() {
-            currentPhotoBase64 = "https://via.placeholder.com/160x200?text=Foto";
-            document.getElementById("cardImg").src = currentPhotoBase64;
+            currentPhotoBase64 = DEFAULT_PHOTO;
+            document.getElementById("cardImg").src = DEFAULT_PHOTO;
           };
           img.src = evt.target.result;
         };
@@ -467,9 +474,9 @@
 
       members.forEach((m, index) => {
         const row = document.createElement("tr");
-        const imgSrc = (m.photo && m.photo.length > 20) ? m.photo : 'https://via.placeholder.com/160x200?text=Foto';
+        const imgSrc = (m.photo && m.photo.length > 30) ? m.photo : DEFAULT_PHOTO;
         row.innerHTML = `
-          <td><img src="${imgSrc}" style="width:36px; height:44px; border-radius:4px; object-fit:cover;" onerror="this.src='https://via.placeholder.com/160x200?text=Foto'"></td>
+          <td><img src="${imgSrc}" style="width:36px; height:44px; border-radius:4px; object-fit:cover;"></td>
           <td><strong style="color:var(--cyber-cyan);">${escapeHtml(m.id)}</strong></td>
           <td>${escapeHtml(m.name)}</td>
           <td>${escapeHtml(m.dept)}</td>
@@ -506,7 +513,7 @@
       document.getElementById("cardDept").innerText = m.dept;
       document.getElementById("cardPhone").innerText = m.phone;
       document.getElementById("cardEmail").innerText = m.email;
-      document.getElementById("cardImg").src = (m.photo && m.photo.length > 20) ? m.photo : "https://via.placeholder.com/160x200?text=Foto";
+      document.getElementById("cardImg").src = (m.photo && m.photo.length > 30) ? m.photo : DEFAULT_PHOTO;
 
       const fullQrUrl = `${currentWebUrl}?view_id=${encodeURIComponent(m.id)}&nama=${encodeURIComponent(m.name)}&dept=${encodeURIComponent(m.dept)}&phone=${encodeURIComponent(m.phone)}&email=${encodeURIComponent(m.email)}`;
       updateQRCodeBack(fullQrUrl);
@@ -548,11 +555,11 @@
 
       alert("Berhasil disimpan ke LocalStorage!");
       document.getElementById("registrationForm").reset();
-      currentPhotoBase64 = "https://via.placeholder.com/160x200?text=Foto+Anggota";
+      currentPhotoBase64 = DEFAULT_PHOTO;
       loadMembersFromLocalStorage();
     });
 
-    // UNDUH KTA DIGITAL (CEPAT DAN TAHAN GAMBAR RUSAK)
+    // PROSES UNDUH KTA DIGITAL INSTAN (BEBAS TIMEOUT & RENDER INSTAN)
     document.getElementById("downloadBtn").addEventListener("click", function() {
       const btn = this;
       const originalText = btn.innerHTML;
@@ -564,20 +571,13 @@
       const cardElem = document.getElementById(targetId);
       const sideName = isFlipped ? "BELAKANG_BARCODE" : "DEPAN";
 
-      // Batas waktu maks 5 detik agar tombol tidak menggantung selamanya
-      const safetyTimeout = setTimeout(() => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        alert("Proses unduh timeout. Gambar langsung diunduh.");
-      }, 5000);
-
       html2canvas(cardElem, {
         scale: 2,
-        useCORS: true,
-        allowTaint: false,
+        useCORS: false,      // Matikan request CORS eksternal agar proses seratus persen lokal
+        allowTaint: true,   // Mengizinkan Data-URI SVG & Base64 lokal
         logging: false,
-        imageTimeout: 2000, // Tunggu gambar maksimal 2 detik
         onclone: (clonedDoc) => {
+          // Hilangkan CSS Transform 3D agar gambar tidak terbalik saat dirender
           const clonedTarget = clonedDoc.getElementById(targetId);
           if (clonedTarget) {
             clonedTarget.style.transform = "none";
@@ -590,7 +590,6 @@
           }
         }
       }).then(canvas => {
-        clearTimeout(safetyTimeout);
         canvas.toBlob(function(blob) {
           if (!blob) {
             alert("Gagal membuat gambar PNG!");
@@ -611,11 +610,10 @@
             URL.revokeObjectURL(fileUrl);
             btn.innerHTML = originalText;
             btn.disabled = false;
-          }, 500);
+          }, 300);
         }, 'image/png');
 
       }).catch(err => {
-        clearTimeout(safetyTimeout);
         alert("Gagal mengunduh: " + err.message);
         btn.innerHTML = originalText;
         btn.disabled = false;
