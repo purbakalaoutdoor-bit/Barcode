@@ -103,7 +103,7 @@
 </head>
 <body>
 
-  <!-- HALAMAN VERIFIKASI QR CODE (3D FLIP KTA) -->
+  <!-- HALAMAN VERIFIKASI QR CODE -->
   <div id="profilePage" class="profile-view">
     <div class="profile-badge"><i class="fa-solid fa-shield-halved"></i> ANGGOTA TERVERIFIKASI</div>
 
@@ -144,7 +144,7 @@
             </div>
           </div>
 
-          <!-- SISI BELAKANG PROFILE (BARCODE) -->
+          <!-- SISI BELAKANG PROFILE -->
           <div class="kta-card kta-card-back">
             <div class="kta-header">
               <div class="kta-logo"><i class="fa-solid fa-shield-halved"></i></div>
@@ -340,20 +340,16 @@
   </div>
 
   <script>
-    // MANAJEMEN PENYIMPANAN LOCALSTORAGE
     let members = JSON.parse(localStorage.getItem("members_kta")) || [];
     let currentPhotoBase64 = "https://via.placeholder.com/160x200?text=Foto+Anggota";
     const currentWebUrl = window.location.href.split('?')[0];
 
-    // MENGAMBIL DATA JIKA BUKA DARI SCAN QR CODE
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('view_id')) {
       document.getElementById("dashboardPage").style.display = "none";
       document.getElementById("profilePage").style.display = "block";
       
       const viewId = urlParams.get('view_id');
-      
-      // Cari di LocalStorage terlebih dahulu
       let matchedMember = members.find(m => m.id === viewId);
 
       const name = matchedMember ? matchedMember.name : (urlParams.get('nama') || "TIDAK DITEMUKAN");
@@ -371,7 +367,6 @@
       document.getElementById("profEmail").innerText = email;
       document.getElementById("profImg").src = photo;
 
-      // QR Code di sisi belakang profil
       const shortQrUrl = `${currentWebUrl}?view_id=${encodeURIComponent(id)}&nama=${encodeURIComponent(name)}&dept=${encodeURIComponent(dept)}&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(email)}`;
       
       const container = document.getElementById("profQrcodeBack");
@@ -447,7 +442,6 @@
       }
     });
 
-    // LOAD DAFTAR ANGGOTA DARI LOCALSTORAGE
     function loadMembersFromLocalStorage() {
       const tableBody = document.getElementById("memberTableBody");
       tableBody.innerHTML = "";
@@ -504,7 +498,6 @@
       updateDirectContactButtons(m.phone, m.email);
     }
 
-    // SIMPAN ANGGOTA BARU KE LOCALSTORAGE
     document.getElementById("registrationForm").addEventListener("submit", function (e) {
       e.preventDefault();
 
@@ -544,13 +537,25 @@
       loadMembersFromLocalStorage();
     });
 
-    // UNDUH KTA DIGITAL
+    // UNDUH KTA DIGITAL (MENGHINDARI EFFECT MIRROR DENGAN ONCLONE)
     document.getElementById("downloadBtn").addEventListener("click", function() {
       const isFlipped = document.getElementById("cardInner").classList.contains("is-flipped");
-      const cardElem = isFlipped ? document.getElementById("cardBackToCapture") : document.getElementById("cardFrontToCapture");
+      const targetId = isFlipped ? "cardBackToCapture" : "cardFrontToCapture";
+      const cardElem = document.getElementById(targetId);
       const sideName = isFlipped ? "BELAKANG_BARCODE" : "DEPAN";
 
-      html2canvas(cardElem, { scale: 3, useCORS: true, backgroundColor: null }).then(canvas => {
+      html2canvas(cardElem, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: null,
+        onclone: (clonedDoc) => {
+          // Menetralkan transformasi 3D rotateY(180deg) pada kloningan agar hasil unduh tidak cermin
+          const clonedElem = clonedDoc.getElementById(targetId);
+          if (clonedElem) {
+            clonedElem.style.transform = "none";
+          }
+        }
+      }).then(canvas => {
         const link = document.createElement("a");
         link.download = `KTA_${sideName}_${document.getElementById("cardID").innerText.replace(/\s+/g, '_')}.png`;
         link.href = canvas.toDataURL("image/png");
