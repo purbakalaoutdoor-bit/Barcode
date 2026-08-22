@@ -537,7 +537,7 @@
       loadMembersFromLocalStorage();
     });
 
-    // UNDUH KTA DIGITAL (MENGHINDARI EFFECT MIRROR DENGAN ONCLONE)
+    // UNDUH KTA DIGITAL - FIX EFFECT MIRROR DENGAN 2D CANVAS FLIPPING
     document.getElementById("downloadBtn").addEventListener("click", function() {
       const isFlipped = document.getElementById("cardInner").classList.contains("is-flipped");
       const targetId = isFlipped ? "cardBackToCapture" : "cardFrontToCapture";
@@ -547,18 +547,26 @@
       html2canvas(cardElem, {
         scale: 3,
         useCORS: true,
-        backgroundColor: null,
-        onclone: (clonedDoc) => {
-          // Menetralkan transformasi 3D rotateY(180deg) pada kloningan agar hasil unduh tidak cermin
-          const clonedElem = clonedDoc.getElementById(targetId);
-          if (clonedElem) {
-            clonedElem.style.transform = "none";
-          }
-        }
+        backgroundColor: null
       }).then(canvas => {
+        let finalCanvas = canvas;
+
+        // Jika yang diunduh adalah sisi belakang yang terpengaruh CSS rotateY(180deg),
+        // lakukan pencerminan balik (flip horizontal) pada 2D Context secara otomatis.
+        if (isFlipped) {
+          const flipCanvas = document.createElement('canvas');
+          flipCanvas.width = canvas.width;
+          flipCanvas.height = canvas.height;
+          const ctx = flipCanvas.getContext('2d');
+          ctx.translate(canvas.width, 0);
+          ctx.scale(-1, 1);
+          ctx.drawImage(canvas, 0, 0);
+          finalCanvas = flipCanvas;
+        }
+
         const link = document.createElement("a");
         link.download = `KTA_${sideName}_${document.getElementById("cardID").innerText.replace(/\s+/g, '_')}.png`;
-        link.href = canvas.toDataURL("image/png");
+        link.href = finalCanvas.toDataURL("image/png");
         link.click();
       });
     });
