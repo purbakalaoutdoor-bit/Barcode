@@ -3,16 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Pendaftaran KTA Abidzar Group - Supabase</title>
+  <title>Sistem Pendaftaran KTA Abidzar Group - LocalStorage</title>
 
   <!-- Google Fonts & FontAwesome Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  <!-- Library QR Code, HTML2Canvas & Supabase JS SDK -->
+  <!-- Library QR Code & HTML2Canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     :root {
@@ -61,7 +60,7 @@
     .btn-edit { background: #d39e00; color: #fff; border: none; }
     .btn-danger { background: #dc3545; color: #fff; border: none; }
 
-    /* FLIP CARD 3D */
+    /* FLIP CARD 3D STYLING */
     .id-card-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 330px; }
     .flip-container { perspective: 1000px; width: 330px; height: 570px; }
     .card-inner { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
@@ -94,8 +93,8 @@
     .kta-footer-icon { font-size: 1.8rem; color: #245873; text-shadow: 0 0 5px rgba(82, 229, 255, 0.2); }
 
     .qr-back-box { background: #ffffff; padding: 12px; border-radius: 12px; border: 2px solid var(--cyber-cyan); box-shadow: 0 0 15px var(--cyber-glow); display: flex; justify-content: center; align-items: center; margin: 10px 0; z-index: 2; }
-    .profile-view { display: none; background: var(--card-bg); border: 2px solid var(--border-cyan); padding: 30px; border-radius: 20px; text-align: center; max-width: 480px; margin: 40px auto; box-shadow: 0 0 30px rgba(0,240,255,0.2); }
-    .profile-badge { display: inline-block; background: rgba(82,229,255,0.1); border: 1px solid var(--cyber-cyan); color: var(--cyber-cyan); padding: 4px 14px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; margin-bottom: 15px; font-family: 'Orbitron', sans-serif; }
+    .profile-view { display: none; background: var(--card-bg); border: 2px solid var(--border-cyan); padding: 30px 20px; border-radius: 20px; text-align: center; max-width: 400px; margin: 20px auto; box-shadow: 0 0 30px rgba(0,240,255,0.2); }
+    .profile-badge { display: inline-block; background: rgba(82,229,255,0.1); border: 1px solid var(--cyber-cyan); color: var(--cyber-cyan); padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; margin-bottom: 15px; font-family: 'Orbitron', sans-serif; }
     
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
     table th, table td { padding: 10px; border: 1px solid var(--border-cyan); text-align: left; }
@@ -104,33 +103,98 @@
 </head>
 <body>
 
-  <!-- HALAMAN VERIFIKASI HASIL SCAN QR CODE -->
+  <!-- HALAMAN VERIFIKASI QR CODE (3D FLIP KTA) -->
   <div id="profilePage" class="profile-view">
     <div class="profile-badge"><i class="fa-solid fa-shield-halved"></i> ANGGOTA TERVERIFIKASI</div>
-    <div class="kta-photo-frame" style="margin: 0 auto 15px; width: 130px; height: 160px;">
-      <img id="profImg" src="https://via.placeholder.com/150?text=Foto" alt="Foto Profil">
-    </div>
-    <h2 id="profName" style="color: var(--cyber-cyan); font-family:'Orbitron', sans-serif; font-size:1.2rem; margin-bottom: 4px;">Memuat data...</h2>
-    <p id="profID" style="color: var(--gold-yellow); font-family:'Orbitron', sans-serif; font-size: 0.9rem; margin-bottom: 15px;">-</p>
 
-    <div style="text-align:left; background:#060f17; padding:15px; border-radius:10px; border:1px solid var(--border-cyan); margin-bottom:20px;">
-      <div style="margin-bottom:8px;"><strong>Divisi:</strong> <span id="profDept" style="color:#fff;">-</span></div>
-      <div style="margin-bottom:8px;"><strong>WhatsApp:</strong> <span id="profPhone" style="color:#fff;">-</span></div>
-      <div><strong>Email:</strong> <span id="profEmail" style="color:#fff;">-</span></div>
-    </div>
+    <div class="id-card-wrapper" style="margin: 0 auto;">
+      <div class="flip-container">
+        <div class="card-inner" id="profCardInner">
+          
+          <!-- SISI DEPAN PROFILE -->
+          <div class="kta-card kta-card-front">
+            <div class="kta-header">
+              <div class="kta-logo"><i class="fa-solid fa-campground"></i></div>
+              <div class="kta-title">
+                <h4>KARTU TANDA ANGGOTA</h4>
+                <h3>ABIDZAR GROUP</h3>
+              </div>
+              <div class="kta-logo"><i class="fa-solid fa-compass-drafting"></i></div>
+            </div>
 
-    <div style="display:flex; gap:10px; margin-bottom:15px;">
-      <a id="btnWA" href="#" target="_blank" class="btn btn-wa"><i class="fa-brands fa-whatsapp"></i> Chat WA</a>
-      <a id="btnMail" href="#" class="btn btn-mail"><i class="fa-solid fa-envelope"></i> Email</a>
+            <div class="kta-photo-frame">
+              <img id="profImg" src="https://via.placeholder.com/160x200?text=Foto" alt="Foto Profil">
+            </div>
+
+            <div class="kta-name" id="profName">-</div>
+            <div class="kta-label">No . Anggota</div>
+            <div class="kta-id-badge" id="profID">-</div>
+            
+            <div class="kta-label">DIVISI :</div>
+            <div class="kta-divisi-val" id="profDept">-</div>
+
+            <div class="kta-contacts">
+              <div class="contact-item"><i class="fa-brands fa-whatsapp"></i> <span id="profPhone">-</span></div>
+              <div class="contact-item"><i class="fa-solid fa-envelope"></i> <span id="profEmail">-</span></div>
+            </div>
+
+            <div class="kta-footer" style="position:absolute; bottom:10px; padding: 0 15px; width:100%;">
+              <div class="kta-footer-icon"><i class="fa-regular fa-compass"></i></div>
+              <div class="kta-footer-icon"><i class="fa-solid fa-mountain-sun"></i></div>
+            </div>
+          </div>
+
+          <!-- SISI BELAKANG PROFILE (BARCODE) -->
+          <div class="kta-card kta-card-back">
+            <div class="kta-header">
+              <div class="kta-logo"><i class="fa-solid fa-shield-halved"></i></div>
+              <div class="kta-title">
+                <h4>KARTU TANDA ANGGOTA</h4>
+                <h3>VERIFIKASI BARCODE</h3>
+              </div>
+              <div class="kta-logo"><i class="fa-solid fa-qrcode"></i></div>
+            </div>
+
+            <div style="text-align: center; z-index: 2;">
+              <div style="font-family:'Orbitron', sans-serif; font-size:0.8rem; color:var(--cyber-cyan); letter-spacing:1px; margin-bottom:8px;">SCAN UNTUK VERIFIKASI PROFIL</div>
+              <div class="qr-back-box"><div id="profQrcodeBack"></div></div>
+              <div style="font-family:'Orbitron', sans-serif; font-size:0.85rem; color:var(--gold-yellow); margin-top:6px;" id="profIDBack">-</div>
+            </div>
+
+            <div style="text-align: center; font-family:'Rajdhani', sans-serif; font-size:0.8rem; color:#8a9ba8; padding: 0 10px; z-index:2;">
+              <p style="color:#fff; font-weight:bold; margin-bottom:2px;">ABIDZAR GROUP OFFICIAL</p>
+              <p>Kartu ini terverifikasi secara resmi pada sistem Abidzar Group.</p>
+            </div>
+
+            <div class="kta-footer" style="width:100%;">
+              <div class="kta-footer-icon"><i class="fa-regular fa-compass"></i></div>
+              <div class="kta-footer-icon"><i class="fa-solid fa-mountain-sun"></i></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-flip" onclick="toggleProfCardFlip()" style="margin-top:15px;">
+        <i class="fa-solid fa-rotate"></i> Putar Kartu (Lihat Barcode)
+      </button>
+
+      <div style="display: flex; gap: 10px; width: 100%; margin-top: 10px;">
+        <a id="btnWA" href="#" target="_blank" class="btn btn-wa" style="flex: 1;"><i class="fa-brands fa-whatsapp"></i> Chat WA</a>
+        <a id="btnMail" href="#" class="btn btn-mail" style="flex: 1;"><i class="fa-solid fa-envelope"></i> Email</a>
+      </div>
+
+      <a href="javascript:void(0)" onclick="window.location.href=window.location.pathname" class="btn" style="margin-top:10px; text-decoration:none;">
+        <i class="fa-solid fa-house"></i> Kembali ke Dashboard
+      </a>
     </div>
-    <a href="javascript:void(0)" onclick="window.location.href=window.location.pathname" class="btn" style="text-decoration:none;"><i class="fa-solid fa-house"></i> Kembali ke Dashboard</a>
   </div>
 
   <!-- DASHBOARD UTAMA -->
   <div class="container" id="dashboardPage">
     <header>
       <h1>ABIDZAR GROUP MEMBER SYSTEM</h1>
-      <p>Sistem Pendaftaran & KTA Digital Berbasis Supabase Cloud</p>
+      <p>Sistem Pendaftaran & KTA Digital Berbasis LocalStorage</p>
     </header>
 
     <div class="main-grid">
@@ -168,7 +232,7 @@
             <input type="file" id="photo" accept="image/*">
           </div>
 
-          <button type="submit" class="btn" id="submitBtn"><i class="fa-solid fa-cloud-arrow-up"></i> Simpan ke Supabase</button>
+          <button type="submit" class="btn" id="submitBtn"><i class="fa-solid fa-id-card"></i> Buat & Simpan KTA</button>
         </form>
       </div>
 
@@ -231,7 +295,7 @@
 
                 <div style="text-align: center; font-family:'Rajdhani', sans-serif; font-size:0.8rem; color:#8a9ba8; padding: 0 10px; z-index:2;">
                   <p style="color:#fff; font-weight:bold; margin-bottom:2px;">ABIDZAR GROUP OFFICIAL</p>
-                  <p>Kartu ini terverifikasi secara online pada database Supabase Cloud.</p>
+                  <p>Kartu ini terverifikasi secara resmi pada penyimpanan internal browser.</p>
                 </div>
 
                 <div class="kta-footer" style="width:100%;">
@@ -253,9 +317,9 @@
       </div>
     </div>
 
-    <!-- Tabel Daftar Anggota dari Supabase -->
+    <!-- Tabel Daftar Anggota dari LocalStorage -->
     <div class="panel">
-      <h2><i class="fa-solid fa-database"></i> Data Anggota (Supabase Database)</h2>
+      <h2><i class="fa-solid fa-hard-drive"></i> Data Anggota (LocalStorage)</h2>
       <div style="overflow-x:auto;">
         <table>
           <thead>
@@ -276,60 +340,67 @@
   </div>
 
   <script>
-    // ==========================================
-    // KREDENSIAL SUPABASE
-    // ==========================================
-    const SUPABASE_URL = 'https://auxfogjloamdkgdqwndc.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_GMo4SU9MSZrcLgoBCO9Dcg_5ZXkuI3_'; 
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+    // MANAJEMEN PENYIMPANAN LOCALSTORAGE
+    let members = JSON.parse(localStorage.getItem("members_kta")) || [];
     let currentPhotoBase64 = "https://via.placeholder.com/160x200?text=Foto+Anggota";
     const currentWebUrl = window.location.href.split('?')[0];
 
-    // MENGAMBIL DATA DARI SUPABASE JIKA WEBSITE DIBUKA LEWAT SCAN QR CODE
+    // MENGAMBIL DATA JIKA BUKA DARI SCAN QR CODE
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('view_id')) {
       document.getElementById("dashboardPage").style.display = "none";
       document.getElementById("profilePage").style.display = "block";
       
       const viewId = urlParams.get('view_id');
-      loadScannedMemberProfile(viewId);
+      
+      // Cari di LocalStorage terlebih dahulu
+      let matchedMember = members.find(m => m.id === viewId);
+
+      const name = matchedMember ? matchedMember.name : (urlParams.get('nama') || "TIDAK DITEMUKAN");
+      const id = matchedMember ? matchedMember.id : viewId;
+      const dept = matchedMember ? matchedMember.dept : (urlParams.get('dept') || "-");
+      const phone = matchedMember ? matchedMember.phone : (urlParams.get('phone') || "-");
+      const email = matchedMember ? matchedMember.email : (urlParams.get('email') || "-");
+      const photo = matchedMember ? matchedMember.photo : "https://via.placeholder.com/160x200?text=Foto";
+
+      document.getElementById("profID").innerText = id;
+      document.getElementById("profIDBack").innerText = id;
+      document.getElementById("profName").innerText = name;
+      document.getElementById("profDept").innerText = dept;
+      document.getElementById("profPhone").innerText = phone;
+      document.getElementById("profEmail").innerText = email;
+      document.getElementById("profImg").src = photo;
+
+      // QR Code di sisi belakang profil
+      const shortQrUrl = `${currentWebUrl}?view_id=${encodeURIComponent(id)}&nama=${encodeURIComponent(name)}&dept=${encodeURIComponent(dept)}&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(email)}`;
+      
+      const container = document.getElementById("profQrcodeBack");
+      container.innerHTML = "";
+      new QRCode(container, {
+        text: shortQrUrl,
+        width: 150,
+        height: 150,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      if(phone && phone !== "-") {
+        document.getElementById("btnWA").href = `https://wa.me/${phone.replace(/[^0-9]/g, '')}`;
+      }
+      if(email && email !== "-") {
+        document.getElementById("btnMail").href = `mailto:${email}`;
+      }
     }
 
-    async function loadScannedMemberProfile(memberId) {
-      try {
-        const { data, error } = await supabaseClient
-          .from('members')
-          .select('*')
-          .eq('member_id', memberId)
-          .single();
-
-        if (error || !data) throw error;
-
-        document.getElementById("profID").innerText = data.member_id;
-        document.getElementById("profName").innerText = data.name;
-        document.getElementById("profDept").innerText = data.dept;
-        document.getElementById("profPhone").innerText = data.phone || "-";
-        document.getElementById("profEmail").innerText = data.email || "-";
-        if(data.photo) document.getElementById("profImg").src = data.photo;
-
-        if(data.phone) {
-          document.getElementById("btnWA").href = `https://wa.me/${data.phone.replace(/[^0-9]/g, '')}`;
-        }
-        if(data.email) {
-          document.getElementById("btnMail").href = `mailto:${data.email}`;
-        }
-      } catch (err) {
-        document.getElementById("profName").innerText = "Data Tidak Ditemukan";
-        console.error("Gagal mengambil profil terverifikasi:", err);
-      }
+    function toggleProfCardFlip() {
+      document.getElementById("profCardInner").classList.toggle("is-flipped");
     }
 
     function toggleCardFlip() {
       document.getElementById("cardInner").classList.toggle("is-flipped");
     }
 
-    // MEMBUAT QR CODE PENDEK & RENGGANG AGAR MUDAH DIBACA KAMERA
     function updateQRCodeBack(url) {
       const container = document.getElementById("qrcodeBack");
       container.innerHTML = "";
@@ -339,7 +410,7 @@
         height: 150,
         colorDark: "#000000",
         colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.M // Level M membuat bintik QR code lebih besar dan tidak rapat
+        correctLevel: QRCode.CorrectLevel.M
       });
     }
 
@@ -376,45 +447,32 @@
       }
     });
 
-    // AMBIL DAFTAR ANGGOTA DARI SUPABASE
-    async function loadMembersFromSupabase() {
+    // LOAD DAFTAR ANGGOTA DARI LOCALSTORAGE
+    function loadMembersFromLocalStorage() {
       const tableBody = document.getElementById("memberTableBody");
-      tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--cyber-cyan);"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data dari Supabase...</td></tr>`;
+      tableBody.innerHTML = "";
 
-      try {
-        const { data, error } = await supabaseClient
-          .from('members')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        tableBody.innerHTML = "";
-        if (!data || data.length === 0) {
-          tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#8a9ba8; padding:20px;">Belum ada anggota terdaftar di database Supabase</td></tr>`;
-          return;
-        }
-
-        data.forEach(m => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td><img src="${m.photo || 'https://via.placeholder.com/160x200?text=Foto'}" style="width:36px; height:44px; border-radius:4px; object-fit:cover;"></td>
-            <td><strong style="color:var(--cyber-cyan);">${escapeHtml(m.member_id)}</strong></td>
-            <td>${escapeHtml(m.name)}</td>
-            <td>${escapeHtml(m.dept)}</td>
-            <td>${escapeHtml(m.phone)}</td>
-            <td>${escapeHtml(m.email)}</td>
-            <td>
-              <button class="btn btn-action btn-edit" onclick='previewMember(${JSON.stringify(m)})'>Lihat</button>
-              <button class="btn btn-action btn-danger" onclick="deleteMemberFromSupabase('${m.id}')">Hapus</button>
-            </td>
-          `;
-          tableBody.appendChild(row);
-        });
-      } catch (err) {
-        console.error("Gagal koneksi Supabase:", err);
-        tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#dc3545; padding:20px;"><i class="fa-solid fa-triangle-exclamation"></i> Gagal terhubung ke Supabase. Pastikan Anon Key diisi dengan benar.</td></tr>`;
+      if (members.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#8a9ba8; padding:20px;">Belum ada anggota terdaftar di LocalStorage</td></tr>`;
+        return;
       }
+
+      members.forEach((m, index) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td><img src="${m.photo || 'https://via.placeholder.com/160x200?text=Foto'}" style="width:36px; height:44px; border-radius:4px; object-fit:cover;"></td>
+          <td><strong style="color:var(--cyber-cyan);">${escapeHtml(m.id)}</strong></td>
+          <td>${escapeHtml(m.name)}</td>
+          <td>${escapeHtml(m.dept)}</td>
+          <td>${escapeHtml(m.phone)}</td>
+          <td>${escapeHtml(m.email)}</td>
+          <td>
+            <button class="btn btn-action btn-edit" onclick="previewMember(${index})">Lihat</button>
+            <button class="btn btn-action btn-danger" onclick="deleteMember(${index})">Hapus</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
     }
 
     function escapeHtml(text) {
@@ -423,40 +481,32 @@
       });
     }
 
-    async function deleteMemberFromSupabase(dbId) {
-      if (confirm("Hapus data anggota ini dari database Supabase?")) {
-        try {
-          const { error } = await supabaseClient.from('members').delete().eq('id', dbId);
-          if (error) throw error;
-          loadMembersFromSupabase();
-        } catch (err) {
-          alert("Gagal menghapus: " + err.message);
-        }
+    function deleteMember(index) {
+      if (confirm("Hapus data anggota ini dari LocalStorage?")) {
+        members.splice(index, 1);
+        localStorage.setItem("members_kta", JSON.stringify(members));
+        loadMembersFromLocalStorage();
       }
     }
 
-    function previewMember(m) {
+    function previewMember(index) {
+      const m = members[index];
       document.getElementById("cardName").innerText = m.name;
-      document.getElementById("cardID").innerText = m.member_id;
-      document.getElementById("cardIDBack").innerText = m.member_id;
+      document.getElementById("cardID").innerText = m.id;
+      document.getElementById("cardIDBack").innerText = m.id;
       document.getElementById("cardDept").innerText = m.dept;
       document.getElementById("cardPhone").innerText = m.phone;
       document.getElementById("cardEmail").innerText = m.email;
       document.getElementById("cardImg").src = m.photo || "https://via.placeholder.com/160x200?text=Foto";
 
-      // URL HANYA BERISI LINK WEBSITE + ID ANGGOTA (SANGAT RINGKAS)
-      const shortQrUrl = `${currentWebUrl}?view_id=${encodeURIComponent(m.member_id)}`;
-      updateQRCodeBack(shortQrUrl);
+      const fullQrUrl = `${currentWebUrl}?view_id=${encodeURIComponent(m.id)}&nama=${encodeURIComponent(m.name)}&dept=${encodeURIComponent(m.dept)}&phone=${encodeURIComponent(m.phone)}&email=${encodeURIComponent(m.email)}`;
+      updateQRCodeBack(fullQrUrl);
       updateDirectContactButtons(m.phone, m.email);
     }
 
-    // SIMPAN DATA BARU
-    document.getElementById("registrationForm").addEventListener("submit", async function (e) {
+    // SIMPAN ANGGOTA BARU KE LOCALSTORAGE
+    document.getElementById("registrationForm").addEventListener("submit", function (e) {
       e.preventDefault();
-
-      const submitBtn = document.getElementById("submitBtn");
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...`;
 
       const name = document.getElementById("fullName").value.trim().toUpperCase();
       let memberID = document.getElementById("memberIdInput").value.trim() || `AOC - 00${Math.floor(1 + Math.random() * 99)}`;
@@ -472,37 +522,29 @@
       document.getElementById("cardEmail").innerText = email;
       document.getElementById("cardImg").src = currentPhotoBase64;
 
-      // HANYA MENGIRIM ID PADA QR CODE
-      const shortQrUrl = `${currentWebUrl}?view_id=${encodeURIComponent(memberID)}`;
-      updateQRCodeBack(shortQrUrl);
+      const fullQrUrl = `${currentWebUrl}?view_id=${encodeURIComponent(memberID)}&nama=${encodeURIComponent(name)}&dept=${encodeURIComponent(dept)}&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(email)}`;
+      updateQRCodeBack(fullQrUrl);
       updateDirectContactButtons(phone, email);
 
-      try {
-        const { data, error } = await supabaseClient.from('members').insert([
-          {
-            member_id: memberID,
-            name: name,
-            dept: dept,
-            phone: phone,
-            email: email,
-            photo: currentPhotoBase64
-          }
-        ]);
+      const newMember = {
+        id: memberID,
+        name: name,
+        dept: dept,
+        phone: phone,
+        email: email,
+        photo: currentPhotoBase64
+      };
 
-        if (error) throw error;
+      members.unshift(newMember);
+      localStorage.setItem("members_kta", JSON.stringify(members));
 
-        alert("Berhasil disimpan ke Cloud Database Supabase!");
-        document.getElementById("registrationForm").reset();
-        loadMembersFromSupabase();
-      } catch (err) {
-        alert("Gagal menyimpan ke Supabase: " + err.message);
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Simpan ke Supabase`;
-      }
+      alert("Berhasil disimpan ke LocalStorage!");
+      document.getElementById("registrationForm").reset();
+      currentPhotoBase64 = "https://via.placeholder.com/160x200?text=Foto+Anggota";
+      loadMembersFromLocalStorage();
     });
 
-    // UNDUH ID CARD
+    // UNDUH KTA DIGITAL
     document.getElementById("downloadBtn").addEventListener("click", function() {
       const isFlipped = document.getElementById("cardInner").classList.contains("is-flipped");
       const cardElem = isFlipped ? document.getElementById("cardBackToCapture") : document.getElementById("cardFrontToCapture");
@@ -516,9 +558,10 @@
       });
     });
 
-    // Inisialisasi data awal
-    updateQRCodeBack(`${currentWebUrl}?view_id=AOC-002`);
-    loadMembersFromSupabase();
+    // Inisialisasi awal
+    updateQRCodeBack(`${currentWebUrl}?view_id=AOC-002&nama=MUHAMMAD%20FAQIH%20SETYAWAN&dept=CO.%20TEKNIS%20INFORMATIKA&phone=%2B6281234567890&email=faqih_aoc002%40abidzar.group`);
+    updateDirectContactButtons("+6281234567890", "faqih_aoc002@abidzar.group");
+    loadMembersFromLocalStorage();
   </script>
 </body>
 </html>
