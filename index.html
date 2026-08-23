@@ -11,6 +11,7 @@
 
   <!-- Library QR Code -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
     :root {
@@ -32,15 +33,16 @@
     header { text-align: left; margin: 0 auto 30px; padding: 4px 2px 22px; border-bottom: 1px solid var(--line); position: relative; }
     header::after { content: ""; position: absolute; left: 0; bottom: -1px; width: 110px; height: 2px; background: var(--cyber-cyan); box-shadow: 0 0 14px var(--cyber-cyan); }
     .eyebrow { color: var(--gold-yellow); font-family: 'Rajdhani', sans-serif; font-size: 0.76rem; letter-spacing: 2px; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
-    header h1 { font-family: 'Orbitron', sans-serif; font-size: clamp(1.35rem, 3vw, 2.35rem); line-height: 1.2; color: #f4fbfd; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; text-shadow: 0 0 20px var(--cyber-glow); }
+    header h1 { font-family: 'Orbitron', sans-serif; font-size: clamp(1.35rem, 3vw, 2.35rem); line-height: 1.2; color: #f4fbfd; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; text-shadow: 0 0 200px var(--cyber-glow); }
     header h1 span { color: var(--cyber-cyan); }
     header p { color: var(--muted); font-size: 0.92rem; }
 
     .main-grid { display: grid; grid-template-columns: minmax(280px, 0.82fr) minmax(330px, 1.18fr); gap: 22px; margin-bottom: 30px; align-items: start; }
     @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
 
-    .panel { background: linear-gradient(145deg, rgba(19, 41, 54, 0.9), rgba(9, 20, 29, 0.9)); padding: 24px; border-radius: 14px; border: 1px solid var(--border-cyan); box-shadow: 0 18px 50px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.04); backdrop-filter: blur(14px); }
-    .panel h2 { font-family: 'Orbitron', sans-serif; font-size: 1rem; margin-bottom: 20px; color: #edfafd; border-bottom: 1px solid var(--line); padding-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+    .panel { background: linear-gradient(145deg, rgba(19, 41, 54, 0.9), rgba(9, 20, 29, 0.9)); padding: 24px; border-radius: 14px; border: 1px solid var(--border-cyan); box-shadow: 0 18px 50px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.04); backdrop-filter: blur(14px); margin-bottom: 22px; }
+    .panel h2 { font-family: 'Orbitron', sans-serif; font-size: 1rem; margin-bottom: 20px; color: #edfafd; border-bottom: 1px solid var(--line); padding-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .panel h2 div { display: flex; align-items: center; gap: 10px; }
     .panel h2 i { color: var(--cyber-cyan); font-size: 0.95rem; }
 
     .form-group { margin-bottom: 16px; }
@@ -74,6 +76,27 @@
     .btn-edit { background: #d39e00; color: #fff; border: none; }
     .btn-danger { background: #dc3545; color: #fff; border: none; }
     .btn-cancel { background: #6c757d; color: #fff; border: none; margin-top: 8px; display: none; }
+
+    .btn-scanner { width: auto; font-size: 0.85rem; padding: 8px 15px; border-color: var(--gold-yellow); color: var(--gold-yellow); background: rgba(244, 201, 93, 0.1); }
+    .btn-scanner:hover { background: var(--gold-yellow); color: #000; box-shadow: 0 0 12px var(--gold-yellow); }
+
+    .btn-data { width: auto; padding: 7px 14px; font-size: 0.8rem; background: rgba(255,255,255,0.05); border-color: var(--muted); color: var(--muted); }
+    .btn-data:hover { background: var(--muted); color: #000; }
+
+    /* SEARCH STYLING */
+    .search-box-wrapper { position: relative; margin-bottom: 15px; width: 100%; max-width: 350px; }
+    .search-box-wrapper i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--cyber-cyan); font-size: 0.9rem; }
+    .search-input { width: 100%; padding: 10px 10px 10px 38px; background: rgba(14, 30, 43, 0.6); border: 1px solid var(--border-cyan); border-radius: 8px; color: #fff; outline: none; font-size: 0.88rem; transition: 0.3s; }
+    .search-input:focus { border-color: var(--cyber-cyan); box-shadow: 0 0 10px var(--cyber-glow); background: rgba(20, 45, 65, 0.8); }
+
+    /* SCANNER MODAL */
+    #scannerModal { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+    #reader { width: 100%; max-width: 500px; border-radius: 15px; overflow: hidden; border: 2px solid var(--cyber-cyan); box-shadow: 0 0 30px var(--cyber-glow); background: #000; }
+    #reader__scan_region { background: #000; }
+    #reader__dashboard { padding: 15px !important; font-family: 'Rajdhani', sans-serif !important; }
+    #reader__dashboard_section_csr button { background: var(--cyber-cyan) !important; color: #000 !important; border: none !important; border-radius: 5px !important; padding: 5px 10px !important; font-weight: bold !important; }
+    .scanner-header { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 500px; margin-bottom: 15px; }
+    .scanner-header h3 { font-family: 'Orbitron', sans-serif; color: var(--cyber-cyan); font-size: 1rem; }
 
     /* FLIP CARD 3D STYLING */
     .id-card-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 330px; }
@@ -259,7 +282,10 @@
 
       <!-- Preview Kartu Identitas Digital -->
       <div class="panel" style="display:flex; flex-direction:column; align-items:center;">
-        <h2><i class="fa-solid fa-eye"></i> Preview KTA Digital</h2>
+        <h2>
+          <div><i class="fa-solid fa-eye"></i> Preview KTA Digital</div>
+          <button class="btn btn-scanner" onclick="openScanner()"><i class="fa-solid fa-camera"></i> Scanner Kamera</button>
+        </h2>
         
         <div class="id-card-wrapper">
           <div class="flip-container">
@@ -340,7 +366,20 @@
 
     <!-- Tabel Daftar Anggota dari LocalStorage -->
     <div class="panel">
-      <h2><i class="fa-solid fa-hard-drive"></i> Data Anggota (LocalStorage)</h2>
+      <h2>
+        <div><i class="fa-solid fa-hard-drive"></i> Data Anggota (LocalStorage)</div>
+        <div>
+          <button class="btn btn-data" onclick="exportData()"><i class="fa-solid fa-file-export"></i> Ekspor JSON</button>
+          <button class="btn btn-data" onclick="document.getElementById('importFile').click()"><i class="fa-solid fa-file-import"></i> Impor JSON</button>
+          <input type="file" id="importFile" style="display:none;" accept=".json" onchange="importData(event)">
+        </div>
+      </h2>
+
+      <div class="search-box-wrapper">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" class="search-input" id="searchInput" placeholder="Cari berdasarkan nama, ID, atau divisi..." onkeyup="filterTable()">
+      </div>
+
       <div style="overflow-x:auto;">
         <table>
           <thead>
@@ -360,13 +399,150 @@
     </div>
   </div>
 
+  <!-- MODAL SCANNER -->
+  <div id="scannerModal">
+    <div class="scanner-header">
+      <h3><i class="fa-solid fa-qrcode"></i> QR Scanner Verifikasi</h3>
+      <button class="btn btn-danger btn-action" onclick="closeScanner()"><i class="fa-solid fa-xmark"></i> Tutup</button>
+    </div>
+    <div id="reader"></div>
+    <p style="color: var(--muted); margin-top: 15px; font-size: 0.85rem; font-family: 'Rajdhani', sans-serif;">Arahkan kamera ke QR Code pada kartu fisik.</p>
+  </div>
+
   <script>
     const DEFAULT_PHOTO = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='200' viewBox='0 0 160 200'%3E%3Crect width='100%25' height='100%25' fill='%2308121a'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%2352e5ff' font-family='sans-serif' font-size='13'%3EFOTO ANGGOTA%3C/text%3E%3C/svg%3E";
 
     let members = JSON.parse(localStorage.getItem("members_kta")) || [];
     let currentPhotoBase64 = DEFAULT_PHOTO;
-    let editingIndex = null; // Menyimpan index anggota yang sedang di-edit
+    let editingIndex = null; 
+    let html5QrCode = null; // Instance scanner
     const currentWebUrl = window.location.href.split('?')[0];
+
+    // --- FITUR AUTO ID ---
+    function getNextMemberID() {
+      if (members.length === 0) return "AOC - 001";
+      
+      let maxNum = 0;
+      members.forEach(m => {
+        const match = m.id.match(/AOC\s*-\s*(\d+)/i);
+        if (match) {
+          const num = parseInt(match[1]);
+          if (num > maxNum) maxNum = num;
+        }
+      });
+      
+      const nextNum = maxNum + 1;
+      return `AOC - ${nextNum.toString().padStart(3, '0')}`;
+    }
+
+    // --- FITUR SCANNER ---
+    function openScanner() {
+      document.getElementById("scannerModal").style.display = "flex";
+      html5QrCode = new Html5Qrcode("reader");
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+      html5QrCode.start(
+        { facingMode: "environment" }, 
+        config,
+        (decodedText) => {
+          // Sukses Scan
+          playButtonSound();
+          html5QrCode.stop().then(() => {
+            document.getElementById("scannerModal").style.display = "none";
+            // Jika decodedText adalah URL yang valid untuk sistem ini
+            if (decodedText.includes("view_id=")) {
+              window.location.href = decodedText;
+            } else {
+              alert("QR Code terdeteksi: " + decodedText);
+            }
+          });
+        },
+        (errorMessage) => { /* ignore scan errors */ }
+      ).catch((err) => {
+        alert("Gagal membuka kamera: " + err);
+        closeScanner();
+      });
+    }
+
+    function closeScanner() {
+      if (html5QrCode) {
+        html5QrCode.stop().catch(() => {}).finally(() => {
+          document.getElementById("scannerModal").style.display = "none";
+        });
+      } else {
+        document.getElementById("scannerModal").style.display = "none";
+      }
+    }
+
+    // --- FITUR EKSPOR & IMPOR ---
+    function exportData() {
+      if (members.length === 0) return alert("Tidak ada data untuk diekspor.");
+      const dataStr = JSON.stringify(members, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+      const exportFileDefaultName = 'KTA_Abidzar_Backup_' + new Date().toISOString().slice(0,10) + '.json';
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+    }
+
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedMembers = JSON.parse(e.target.result);
+          if (Array.isArray(importedMembers)) {
+            if (confirm(`Impor ${importedMembers.length} data anggota? Data yang ada akan digabungkan.`)) {
+              // Gabungkan berdasarkan ID unik
+              const existingIds = new Set(members.map(m => m.id));
+              let addedCount = 0;
+              importedMembers.forEach(newMem => {
+                if (!existingIds.has(newMem.id)) {
+                  members.push(newMem);
+                  addedCount++;
+                }
+              });
+              
+              localStorage.setItem("members_kta", JSON.stringify(members));
+              loadMembersFromLocalStorage();
+              alert(`Berhasil mengimpor ${addedCount} data baru.`);
+            }
+          } else {
+            alert("Format file JSON tidak valid.");
+          }
+        } catch (err) {
+          alert("Gagal membaca file: " + err.message);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = ''; // Reset input
+    }
+
+    // --- FITUR FILTER TABEL ---
+    function filterTable() {
+      const query = document.getElementById("searchInput").value.toLowerCase();
+      const rows = document.querySelectorAll("#memberTableBody tr");
+
+      rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(query) ? "" : "none";
+      });
+    }
+
+    // --- LOGIKA FORM & VALIDASI WA ---
+    document.getElementById("phone").addEventListener("input", function(e) {
+      // Hanya izinkan angka dan tanda plus di awal
+      let val = e.target.value;
+      if (val.startsWith("+")) {
+        e.target.value = "+" + val.slice(1).replace(/[^0-9]/g, '');
+      } else {
+        e.target.value = val.replace(/[^0-9]/g, '');
+      }
+    });
 
     document.getElementById("cardImg").src = DEFAULT_PHOTO;
     document.getElementById("profImg").src = DEFAULT_PHOTO;
@@ -551,6 +727,9 @@
       currentPhotoBase64 = DEFAULT_PHOTO;
       editingIndex = null;
 
+      // Set Auto ID
+      document.getElementById("memberIdInput").value = getNextMemberID();
+
       // Kembalikan Mode Form ke Tambah
       document.getElementById("formHeaderTitle").innerHTML = `<i class="fa-solid fa-user-plus"></i> Form Pendaftaran`;
       const submitBtn = document.getElementById("submitBtn");
@@ -590,7 +769,7 @@
       e.preventDefault();
 
       const name = document.getElementById("fullName").value.trim().toUpperCase();
-      let memberID = document.getElementById("memberIdInput").value.trim() || `AOC - 00${Math.floor(1 + Math.random() * 99)}`;
+      let memberID = document.getElementById("memberIdInput").value.trim() || getNextMemberID();
       const dept = document.getElementById("department").value.trim().toUpperCase();
       const phone = document.getElementById("phone").value.trim();
       const email = document.getElementById("email").value.trim();
@@ -849,6 +1028,7 @@
     });
 
     // Inisialisasi awal
+    document.getElementById("memberIdInput").value = getNextMemberID();
     updateQRCodeBack(`${currentWebUrl}?view_id=AOC-002&nama=MUHAMMAD%20FAQIH%20SETYAWAN&dept=CO.%20TEKNIS%20INFORMATIKA&phone=%2B6281234567890&email=faqih_aoc002%40abidzar.group`);
     updateDirectContactButtons("+6281234567890", "faqih_aoc002@abidzar.group");
     loadMembersFromLocalStorage();
